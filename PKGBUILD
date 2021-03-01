@@ -1,52 +1,46 @@
-# This is an example PKGBUILD file. Use this as a start to creating your own,
-# and remove these comments. For more information, see 'man PKGBUILD'.
-# NOTE: Please fill out the license field for your package! If it is unknown,
-# then please put 'unknown'.
 
 # Maintainer: Your Name <youremail@domain.com>
-pkgname=NAME
-pkgver=VERSION
+pkgname=st-patched
+pkgver=0.8.4
 pkgrel=1
-epoch=
-pkgdesc=""
-arch=()
-url=""
-license=('GPL')
-groups=()
-depends=()
-makedepends=()
-checkdepends=()
-optdepends=()
-provides=()
-conflicts=()
-replaces=()
-backup=()
-options=()
-install=
-changelog=
-source=("$pkgname-$pkgver.tar.gz"
-        "$pkgname-$pkgver.patch")
-noextract=()
-md5sums=()
-validpgpkeys=()
+pkgdesc="Simple virtual terminal emulator for X."
+arch=(x86_64)
+url="https://github.com/genghispirate/st-patched"
+license=('MIT')
+depends=(libxft)
+makedepends=('ncurses' 'libxext' 'git')
+provides=(package)
+conflicts=(st)
+replaces=(st)
+source=("st-patched::git://github.com/genghispirate/st-patched")
+md5sums=(SKIP)
+
+
+
+pkgver() {
+	cd "${_pkgname}"
+	printf "%s.r%s.%s" "$(awk '/^VERSION =/ {print $3}' config.mk)" \
+		"$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+
+}
 
 prepare() {
-	cd "$pkgname-$pkgver"
-	patch -p1 -i "$srcdir/$pkgname-$pkgver.patch"
+	cd $srcdir/${_pkgname}
+	# skip terminfo which conflicts with ncurses
+	sed -i '/tic /d' Makefile
+
 }
 
 build() {
-	cd "$pkgname-$pkgver"
-	./configure --prefix=/usr
-	make
+	cd "${_pkgname}"
+	make X11INC=/usr/include/X11 X11LIB=/usr/lib/X11
 }
 
-check() {
-	cd "$pkgname-$pkgver"
-	make -k check
-}
 
 package() {
-	cd "$pkgname-$pkgver"
-	make DESTDIR="$pkgdir/" install
+	cd "${_pkgname}"
+	make PREFIX=/usr DESTDIR="${pkgdir}" install
+	install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+	install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+	install -Dm644 Xdefaults "${pkgdir}/usr/share/doc/${pkgname}/Xdefaults.example"
 }
